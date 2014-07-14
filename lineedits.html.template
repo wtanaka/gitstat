@@ -48,7 +48,7 @@ function doPlot()
   choiceContainer.find('input:checked').each(function()
   {
     var key = parseInt(jQuery(this).attr("name"), 10);
-    if (key && plotdata[key]) {
+    if (plotdata[key]) {
       data.push(plotdata[key]);
     }
   });
