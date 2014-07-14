@@ -23,7 +23,8 @@
 <div class="container">
   <div id="placeholder" class="placeholder"></div>
 
-  <div><label><input id="toggleAll" type="checkbox" /> Select All</label></div>
+  <div><label><input id="toggleAll" type="checkbox" checked="checked"
+  /> Select All</label></div>
   <div id="choiceContainer"></div>
 </div>
 
@@ -66,12 +67,12 @@ jQuery('#toggleAll').click(function()
   var isChecked = jQuery(this).prop('checked');
   if (isChecked)
   {
-    choiceContainer.find('input:checkbox:not(:checked)').attr(
-      'checked', 'checked');
+    choiceContainer.find('input:checkbox:not(:checked)').prop(
+      'checked', true);
   }
   else
   {
-    choiceContainer.find('input:checked').attr('checked', null);
+    choiceContainer.find('input:checkbox:checked').prop('checked', false);
   }
   doPlot();
 });
