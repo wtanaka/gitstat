@@ -24,9 +24,14 @@
 </style>
 <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js" /></script>
 <script src="http://cdnjs.cloudflare.com/ajax/libs/flot/0.8.2/jquery.flot.min.js" /></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/flot/0.8.2/jquery.flot.selection.min.js" /></script>
 <script src="http://cdnjs.cloudflare.com/ajax/libs/flot/0.8.2/jquery.flot.time.min.js" /></script>
 </head>
 <body>
+
+<div class="instructions">
+<button id="zoomout">zoom out</button>
+</div>
 
 <div class="container">
   <div id="placeholder" class="placeholder"></div>
@@ -41,6 +46,7 @@
 <script>
 var plotdata = %(plotdata)s;
 var choiceContainer = $('#choiceContainer');
+var plot = null;
 
 function doPlot()
 {
@@ -52,11 +58,12 @@ function doPlot()
       data.push(plotdata[key]);
     }
   });
-  $.plot("#placeholder", data, {
+  plot = $.plot("#placeholder", data, {
     xaxes: [ { mode: "time" } ],
     yaxes: [ { min: 0 }  ],
     grid: { 'hoverable': true, 'clickable': true },
-    legend: { container: $('#legend') }
+    legend: { container: $('#legend') },
+    selection: { mode: "xy" }
   });
 }
 
@@ -116,6 +123,39 @@ $("#placeholder").bind("plothover", function (event, pos, item)
     $("#tooltip").hide();
   }
 });
+
+$("#placeholder").bind("plotselected", function (event, ranges)
+{
+  $.each(plot.getXAxes(), function(_, axis) {
+    var opts = axis.options;
+    opts.min = ranges.xaxis.from;
+    opts.max = ranges.xaxis.to;
+  });
+  $.each(plot.getYAxes(), function(_, axis) {
+    var opts = axis.options;
+    opts.min = ranges.yaxis.from;
+    opts.max = ranges.yaxis.to;
+  });
+  plot.setupGrid();
+  plot.draw();
+  plot.clearSelection();
+});
+
+$('#zoomout').click(function()
+{
+  $.each(plot.getXAxes(), function(_, axis) {
+    var opts = axis.options;
+    opts.min = null;
+    opts.max = null;
+  });
+  $.each(plot.getYAxes(), function(_, axis) {
+    var opts = axis.options;
+    opts.min = null;
+    opts.max = null;
+  });
+  plot.setupGrid();
+  plot.draw();
+})
 
 </script>
 </body>
