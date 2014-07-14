@@ -141,16 +141,20 @@ def make_timeseries(grouped_lines, window_size, aggregate_function):
     window_size, then calls aggregate_function on each window to
     produce the Y-axis value.
     """
-    timeseries = {}
+    timeseries = []
     for email, commits in grouped_lines:
-        timeseries[email] = []
+        datapoints = []
+        y_value_sum = 0.0
         # List of commits 
         for thetime, commitlist in generate_windows(commits, window_size):
             flot_time = datetime_to_flot(thetime)
             y_value = aggregate_function(commitlist)
+            y_value_sum += y_value
             pair = (flot_time, y_value)
-            timeseries[email].append(pair)
-    return timeseries
+            datapoints.append(pair)
+        timeseries.append((y_value_sum, email, datapoints))
+    for _unused, email, datapoints in sorted(timeseries, reverse=True):
+        yield (email, datapoints)
 
 def input_grouped_lines():
     """Parses the output of gitlogstat from standard input into
@@ -171,7 +175,7 @@ def make_plot_data(timeseries):
        'points': {'show': True},
        'lines': {'show': True, 'fill': True},
        'color': idx,
-    } for idx, (label, series) in enumerate(timeseries.iteritems())]
+    } for idx, (label, series) in enumerate(timeseries)]
     return plotdata
 
 def render_timeseries(timeseries):
