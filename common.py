@@ -19,8 +19,11 @@
 """Process the output of gitlogstat to produce a graph, by author,
 of touched lines of codes (additions + deletions)
 """
+import calendar
 import datetime
+import fileinput
 import itertools
+import json
 import logging
 import os.path
 
@@ -42,6 +45,13 @@ class UTC(datetime.tzinfo):
         return ZERO
 
 MY_UTC = UTC()
+
+def datetime_to_flot(a_datetime):
+    """Convert a python datetime to a flot/javascript unix
+    timestamp
+    """
+    timetuple = a_datetime.utctimetuple()
+    return 1000 * calendar.timegm(timetuple)
 
 def render_template(variables):
     """Return a HTML string rendered with the given variables"""
@@ -111,3 +121,63 @@ def removecommitsbefore(commitwindow, cutoff):
     while len(commitwindow) > 0 and commitwindow[0][TIME] < cutoff:
         commitwindow = commitwindow[1:]
     return commitwindow
+
+def generate_windows(commits, window_size):
+    """Given an iterable of commit dicts which is sorted (ascending) by
+    date and a window size (expressed as a timedelta), generate pairs
+    (datetime, list of commit) associating datetimes with a list of
+    commits that appeared in the range [datetime-window_size, datetime]
+    """
+    commitwindow = []
+    for commit in commits:
+        commitwindow.append(commit)
+        commitwindow = removecommitsbefore(commitwindow,
+                commit[TIME] - window_size)
+        yield (commit[TIME], commitwindow)
+
+def make_timeseries(grouped_lines, window_size, aggregate_function):
+    """Convert the output of group_by_author into timeseries data
+    suitable for flot.  First groups commits into running windows of
+    window_size, then calls aggregate_function on each window to
+    produce the Y-axis value.
+    """
+    timeseries = {}
+    for email, commits in grouped_lines:
+        timeseries[email] = []
+        # List of commits 
+        for thetime, commitlist in generate_windows(commits, window_size):
+            flot_time = datetime_to_flot(thetime)
+            y_value = aggregate_function(commitlist)
+            pair = (flot_time, y_value)
+            timeseries[email].append(pair)
+    return timeseries
+
+def input_grouped_lines():
+    """Parses the output of gitlogstat from standard input into
+    commits grouped by author"""
+    parsed_lines = processed_lines(fileinput.input())
+    sorted_lines = sort_by_author_date(parsed_lines)
+    del parsed_lines
+    grouped_lines = group_by_author(sorted_lines)
+    return grouped_lines
+
+def make_plot_data(timeseries):
+    """Turn time series data from make_timeseries into something
+    suitable for passing to flot
+    """
+    plotdata = [{
+       'data': series,
+       'label': label,
+       'points': {'show': True},
+       'lines': {'show': True, 'fill': True},
+       'color': idx,
+    } for idx, (label, series) in enumerate(timeseries.iteritems())]
+    return plotdata
+
+def render_timeseries(timeseries):
+    """Return HTML for the given timeseries
+    """
+    plotdata = make_plot_data(timeseries) 
+    variables = {}
+    variables['plotdata'] = json.dumps(plotdata)
+    return render_template(variables)

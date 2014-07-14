@@ -19,59 +19,24 @@
 """Process the output of gitlogstat to produce a graph, by author,
 of touched lines of codes (additions + deletions)
 """
-import calendar
 import datetime
-import fileinput
-import json
 import logging
 import sys
 
 import common
 
-def make_timeseries(grouped_lines, window_size):
-    """Convert the output of group_by_author into timeseries data
-    suitable for flot
-    """
-    timeseries = {}
-    for email, commits in grouped_lines:
-        timeseries[email] = []
-        # List of commits 
-        commitwindow = []
-        for commit in commits:
-            timetuple = commit[common.TIME].utctimetuple()
-            commitwindow.append(commit)
-            commitwindow = common.removecommitsbefore(commitwindow,
-                    commit[common.TIME] - window_size)
-            linestouched = sum(tuple(c[common.ADDS] +
-                    c[common.DELETES] for c in commitwindow))
-            pair = (1000 * calendar.timegm(timetuple), linestouched)
-            timeseries[email].append(pair)
-    return timeseries
-
 def main():
     """Main function"""
     logging.basicConfig()
-    parsed_lines = common.processed_lines(fileinput.input())
-    sorted_lines = common.sort_by_author_date(parsed_lines)
-    del parsed_lines
-    grouped_lines = common.group_by_author(sorted_lines)
-    del sorted_lines
+    grouped_lines = common.input_grouped_lines()
 
     window_size = datetime.timedelta(days=30)
 
-    timeseries = make_timeseries(grouped_lines, window_size)
+    timeseries = common.make_timeseries(grouped_lines, window_size,
+        lambda commitlist: sum(tuple(c[common.ADDS] +
+            c[common.DELETES] for c in commitlist)))
 
-    plotdata = [{
-       'data': series,
-       'label': label,
-       'points': {'show': True},
-       'lines': {'show': True, 'fill': True},
-       'color': idx,
-    } for idx, (label, series) in enumerate(timeseries.iteritems())]
-
-    variables = {}
-    variables['plotdata'] = json.dumps(plotdata)
-    sys.stdout.write(common.render_template(variables))
+    sys.stdout.write(common.render_timeseries(timeseries))
 
 if __name__ == "__main__":
     main()
