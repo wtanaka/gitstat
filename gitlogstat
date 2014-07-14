@@ -16,4 +16,4 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with gitstat.  If not, see <http://www.gnu.org/licenses/>.
-git log --numstat --format="format:XXX%ae|%an|%at"
+git log --numstat --format="format:COMMIT%ae|%an|%at"
