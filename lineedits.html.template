@@ -40,31 +40,32 @@
 
 <script>
 var plotdata = %(plotdata)s;
-var choiceContainer = jQuery('#choiceContainer');
+var choiceContainer = $('#choiceContainer');
 
 function doPlot()
 {
   var data = [];
   choiceContainer.find('input:checked').each(function()
   {
-    var key = parseInt(jQuery(this).attr("name"), 10);
+    var key = parseInt($(this).attr("name"), 10);
     if (plotdata[key]) {
       data.push(plotdata[key]);
     }
   });
-  jQuery.plot("#placeholder", data, {
+  $.plot("#placeholder", data, {
     xaxes: [ { mode: "time" } ],
     yaxes: [ { min: 0 }  ],
-    legend: { container: jQuery('#legend') }
+    grid: { 'hoverable': true, 'clickable': true },
+    legend: { container: $('#legend') }
   });
 }
 
-jQuery.each(plotdata, function(key, value)
+$.each(plotdata, function(key, value)
 {
   var label = value['label'];
-  var labelJq = jQuery('<label></label>');
+  var labelJq = $('<label></label>');
   labelJq.text(label);
-  var inputJq = jQuery('<input type="checkbox" />');
+  var inputJq = $('<input type="checkbox" />');
   inputJq.attr('name', key);
   inputJq.attr('checked', 'checked');
   inputJq.click(doPlot);
@@ -72,9 +73,9 @@ jQuery.each(plotdata, function(key, value)
   choiceContainer.append(labelJq);
 });
 
-jQuery('#toggleAll').click(function()
+$('#toggleAll').click(function()
 {
-  var isChecked = jQuery(this).prop('checked');
+  var isChecked = $(this).prop('checked');
   if (isChecked)
   {
     choiceContainer.find('input:checkbox:not(:checked)').prop(
@@ -88,5 +89,33 @@ jQuery('#toggleAll').click(function()
 });
 
 doPlot();
+
+$("<div id='tooltip'></div>").css({
+   position: "absolute",
+   display: "none",
+   border: "1px solid #fdd",
+   padding: "2px",
+   "background-color": "#fee",
+   opacity: 0.80
+}).appendTo("body");
+
+$("#placeholder").bind("plothover", function (event, pos, item)
+{
+  if (item)
+  {
+    var x = item.datapoint[0].toFixed(2),
+      y = item.datapoint[1].toFixed(2);
+
+    $("#tooltip").html(item.series.label + " of " +
+      new Date(Math.floor(x)) + " = " + y)
+       .css({top: item.pageY+5, left: item.pageX+5})
+       .fadeIn(200);
+  }
+  else
+  {
+    $("#tooltip").hide();
+  }
+});
+
 </script>
 </body>
