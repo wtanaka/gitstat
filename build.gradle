@@ -1,0 +1,13 @@
+plugins {
+    id "org.jetbrains.kotlin.jvm" version "1.2.30"
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib"
+    compile "org.eclipse.mylyn.github:org.eclipse.egit.github.core:2.1.5"
+}
+
